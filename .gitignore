@@ -3,3 +3,4 @@
 **/*.exe
 main.cpp
 **/*.xlsx
+**/*.drawio
