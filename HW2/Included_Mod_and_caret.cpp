@@ -103,27 +103,38 @@ void InfixToPostfix(const char* infix, char* postfix) {
     Stack stack;
     char back;
     int infixIndex = 0, postIndex = 0;
+    bool expectUnary = true; // Determine if it is a unary positive/negative sign or a binary addition/subtraction
     while (infix[infixIndex] != '\0') {
         switch (precedence(infix[infixIndex])) {
-            case 5: // General numbers, use spaces to distinguish different numbers
+            case 5: // Regular numbers, use spaces to separate different numbers
                 postfix[postIndex++] = ' ';
                 while (precedence(infix[infixIndex]) == 5) {
                     postfix[postIndex++] = infix[infixIndex++];
                 }
                 postfix[postIndex++] = ' ';
                 infixIndex--;
+                expectUnary = false; // A number is present, confirm it is binary
                 break;
             case 4: // Left parenthesis '('
                 stack.push(infix[infixIndex]);
+                expectUnary = true;
                 break;
             case 3: // Addition and subtraction '+' '-'
-                while (!stack.isEmpty()) { 
-                    back = stack.peek();  // Get the top element
-                    if (precedence(back) <= 3) { // If the precedence is higher, pop it
-                        postfix[postIndex++] = stack.pop();
-                    } else break; // Otherwise, stop checking precedence
+                if (expectUnary) {
+                    postfix[postIndex++] = ' ';
+                    postfix[postIndex++] = '0';
+                    postfix[postIndex++] = ' ';
+                    stack.push(infix[infixIndex]);
+                } else {
+                    while (!stack.isEmpty()) { 
+                        back = stack.peek();  // Get the top element
+                        if (precedence(back) <= 3) { // If the precedence is higher, pop it
+                            postfix[postIndex++] = stack.pop();
+                        } else break; // Otherwise, stop checking precedence
+                    }
+                    stack.push(infix[infixIndex]); // Push the current operator
                 }
-                stack.push(infix[infixIndex]); // Push the current operator
+                expectUnary = true;
                 break;
             case 2: // Multiplication, division, and modulus '*' '/' '%'
                 while (!stack.isEmpty()) { 
@@ -132,14 +143,17 @@ void InfixToPostfix(const char* infix, char* postfix) {
                         postfix[postIndex++] = stack.pop();
                     } else break; // Otherwise, stop checking precedence
                 }
+                expectUnary = true;
                 stack.push(infix[infixIndex]); // Push the current operator
                 break;
+                
             case 1:  // Exponentiation '^'
                 // Handle right-associativity by checking if the top of the stack is also '^'
                 while (!stack.isEmpty() && precedence(stack.peek()) == 1) {
                     postfix[postIndex++] = stack.pop();
                 }
                 stack.push(infix[infixIndex]);
+                expectUnary = true;
                 break;
             case 0: // Right parenthesis ')'
                 back = stack.pop();
@@ -147,6 +161,7 @@ void InfixToPostfix(const char* infix, char* postfix) {
                     postfix[postIndex++] = back;
                     back = stack.pop();
                 }
+                expectUnary = false; // The expression is complete and will be calculated into a single number
                 break;
             default:
                 break;
@@ -205,4 +220,3 @@ int main() {
     cout << "ans:" << calculator(postfix) << endl; // Output the result
     return 0;
 }
-// chatgpt url:https://chatgpt.com/share/680e0256-9060-8010-a59b-c43f7040ab52

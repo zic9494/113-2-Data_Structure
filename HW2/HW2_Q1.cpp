@@ -103,6 +103,7 @@ void InfixToPostfix(const char* infix, char* postfix) {
     Stack stack;
     char back;
     int infixIndex =0,postIndex=0;
+    bool expectUnary = true; //判斷是一元的正、負號還是二元加、減號
     while (infix[infixIndex]!='\0'){
         switch (precedence(infix[infixIndex])){
             case 5: // 一般數字，用空格區分不同數字
@@ -112,18 +113,28 @@ void InfixToPostfix(const char* infix, char* postfix) {
                 }
                 postfix[postIndex++]=' ';
                 infixIndex--;
+                expectUnary = false; // 前方有數字，確定為二元
                 break;
             case 4: // 左括號 '('
                 stack.push(infix[infixIndex]);
+                expectUnary = true;
                 break;
             case 3: // 加減 '+' '-'
-                while (!stack.isEmpty()){ 
-                    back= stack.peek();  //抓出最上面一筆
-                    if (precedence(back)<=3){ // 如果權限比較大就取出來放
-                        postfix[postIndex++]= stack.pop();
-                    }else break; // 沒有的話，結束判斷權級
+                if (expectUnary){
+                    postfix[postIndex++]=' ';
+                    postfix[postIndex++]='0';
+                    postfix[postIndex++]=' ';
+                    stack.push(infix[infixIndex]);
+                }else{
+                    while (!stack.isEmpty()){ 
+                        back= stack.peek();  //抓出最上面一筆
+                        if (precedence(back)<=3){ // 如果權限比較大就取出來放
+                            postfix[postIndex++]= stack.pop();
+                        }else break; // 沒有的話，結束判斷權級
+                    }
+                    stack.push(infix[infixIndex]); //推入本次結果
                 }
-                stack.push(infix[infixIndex]); //推入本次結果
+                expectUnary = true;
                 break;
             case 2: // 乘除 '*' '/' '%'
                 while (!stack.isEmpty()){ 
@@ -132,6 +143,7 @@ void InfixToPostfix(const char* infix, char* postfix) {
                         postfix[postIndex++]= stack.pop();
                     }else break; // 沒有的話，結束判斷權級
                 }
+                expectUnary = true;
                 stack.push(infix[infixIndex]); //推入本次結果
                 break;
                 
@@ -141,6 +153,7 @@ void InfixToPostfix(const char* infix, char* postfix) {
                     postfix[postIndex++] = stack.pop();
                 }
                 stack.push(infix[infixIndex]);
+                expectUnary = true;
                 break;
             case 0: // 右括號 ')'
                 back = stack.pop();
@@ -148,6 +161,7 @@ void InfixToPostfix(const char* infix, char* postfix) {
                     postfix[postIndex++]=back;
                     back=stack.pop();
                 }
+                expectUnary = false; //表達式完成，經計算後會變成一個數字
                 break;
             default:
                 break;
